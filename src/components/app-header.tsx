@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react';
 import { LogOut, Recycle, User, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
-import { useAuth, useUser, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import AuthForm from './auth-form';
 import { signOut } from 'firebase/auth';
@@ -22,9 +21,7 @@ import {
 import ProfileEditor from './profile-editor';
 
 export default function AppHeader() {
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { auth, firestore, user, isUserLoading } = useFirebase();
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
@@ -35,7 +32,7 @@ export default function AppHeader() {
   }, [user, isUserLoading, auth]);
 
   useEffect(() => {
-    if (user && !user.isAnonymous) { // Only create doc for non-anonymous users
+    if (user && !user.isAnonymous && firestore) {
       const userRef = doc(firestore, 'users', user.uid);
       getDoc(userRef).then(docSnap => {
         if (!docSnap.exists()) {
@@ -54,7 +51,9 @@ export default function AppHeader() {
   }, [user, firestore]);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
   };
   
   return (
