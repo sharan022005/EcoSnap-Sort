@@ -81,7 +81,7 @@ export default function Leaderboard() {
                         data-ai-hint={avatar.imageHint}
                       />
                     ) : null}
-                    <AvatarFallback>{profile.displayName?.charAt(0)}</Fallback>
+                    <AvatarFallback>{profile.displayName?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-foreground">{profile.displayName || 'Anonymous'}</p>
