@@ -1,0 +1,98 @@
+/**
+ * This ruleset enforces a strict, user-centric security model for the EcoSort AI application.
+ *
+ * Core Philosophy:
+ * The security model is based on user ownership. All user-generated data, including profiles
+ * and waste identification history, is stored within a path structure that is unique to each
+ * user. This ensures that a user can only ever access their own data.
+ *
+ * Data Structure:
+ * The data is organized hierarchically. A top-level 'users' collection holds individual user
+ * documents. All related data, such as 'wasteIdentifications', is stored in subcollections
+ * under the specific user's document (e.g., /users/{userId}/wasteIdentifications/{wasteId}).
+ *
+ * Key Security Decisions:
+ * - User Privacy: Listing the top-level '/users' collection is strictly forbidden to prevent
+ *   any user from discovering or enumerating other users of the application.
+ * - Strict Ownership: All read and write operations are gated by checking if the authenticated
+ *   user's ID matches the user ID in the document path.
+ * - Authorization Integrity: To ensure data consistency, rules validate that internal ID
+ *   fields (e.g., 'User.id', 'WasteIdentification.userId') match the user ID in the
+ *   document path upon creation and are immutable upon update. This prevents data from being
+ *   associated with the wrong user.
+ *
+ * Denormalization for Authorization:
+ * The `WasteIdentification` documents contain a `userId` field. This denormalization is crucial
+ * as it allows security rules to validate on document creation that the data being written
+ * rightfully belongs to the user specified in the path, without needing any extra document reads.
+ *
+ * Structural Segregation:
+ * The database structure naturally segregates each user's data into their own document tree.
+ * This makes security rules simple and highly performant, as access is determined by the
+ * path itself rather than by filtering on fields within a shared collection.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for reusable logic
+    // ------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    /**
+     * Ensures an operation is performed by the document owner and that the document exists.
+     * Crucial for safe update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for user profile documents.
+     * @path /users/{userId}
+     * @allow (get) An authenticated user reads their own profile document. auth.uid: "user_abc", path: "/users/user_abc".
+     * @allow (create) A new user creates their own profile document. auth.uid: "user_xyz", path: "/users/user_xyz".
+     * @deny (list) Any user, authenticated or not, tries to list all users. path: "/users".
+     * @deny (update) An authenticated user tries to update another user's profile. auth.uid: "user_abc", path: "/users/user_xyz".
+     * @principle Restricts access to a user's own data tree and prevents user enumeration for privacy.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // CRITICAL: Prevents scraping and enumeration of all users.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's waste identification history.
+     * @path /users/{userId}/wasteIdentifications/{wasteId}
+     * @allow (create) An authenticated user creates a new waste identification record for themselves. auth.uid: "user_abc", path: "/users/user_abc/wasteIdentifications/new_id".
+     * @allow (list) An authenticated user lists their own waste identification history. auth.uid: "user_abc", path: "/users/user_abc/wasteIdentifications".
+     * @deny (get) An authenticated user tries to read a specific record belonging to another user. auth.uid: "user_abc", path: "/users/user_xyz/wasteIdentifications/some_id".
+     * @deny (create) An authenticated user tries to create a record under another user's path. auth.uid: "user_abc", path: "/users/user_xyz/wasteIdentifications/new_id".
+     * @principle Enforces document ownership for all subcollection operations, ensuring data privacy.
+     */
+    match /users/{userId}/wasteIdentifications/{wasteId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

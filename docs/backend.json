@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the EcoSort AI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user."
+        },
+        "points": {
+          "type": "number",
+          "description": "The user's current score in the EcoSort AI game.",
+          "format": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "points"
+      ]
+    },
+    "WasteIdentification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WasteIdentification",
+      "type": "object",
+      "description": "Represents a single waste identification event performed by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the waste identification event.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who performed the identification. (Relationship: User 1:N WasteIdentification)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the waste identification was performed.",
+          "format": "date-time"
+        },
+        "imageUri": {
+          "type": "string",
+          "description": "URI of the image used for waste identification.",
+          "format": "uri"
+        },
+        "predictedBin": {
+          "type": "string",
+          "description": "The bin (Red, Blue, Green) predicted by the AI. Red is also known as Hazardous/Reject."
+        },
+        "ecoFact": {
+          "type": "string",
+          "description": "A short environmental fact provided to the user.",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "timestamp",
+        "imageUri",
+        "predictedBin",
+        "ecoFact"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. Path-based ownership ensures only the authenticated user can modify their own document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wasteIdentifications/{wasteId}",
+        "definition": {
+          "entityName": "WasteIdentification",
+          "schema": {
+            "$ref": "#/backend/entities/WasteIdentification"
+          },
+          "description": "Stores waste identification events for a specific user. Path-based ownership ensures that only the user can modify their own waste identification records. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who performed the waste identification."
+            },
+            {
+              "name": "wasteId",
+              "description": "The unique identifier for the waste identification event."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the EcoSort AI application, focusing on user data, waste identification events, and a leaderboard. It prioritizes security, scalability, and ease of debugging based on the design principles outlined. Specifically, it employs Authorization Independence via denormalization and structural segregation to achieve a homogeneous security posture across collections.\n\n**Authorization Independence**: Achieved by storing all necessary authorization data directly within the documents, thus avoiding the need for `get()` calls in security rules. For example, `WasteIdentification` documents are stored under the user's path, inheriting implicit ownership.\n\n**QAPs (Rules are not Filters)**: Supported through structural segregation. User data and waste identification events are stored in separate collections, each with clearly defined security rules. The Leaderboard is managed via a query on the `users` collection, ensuring that listing operations are secure and efficient without requiring complex filtering in the rules."
+  }
+}
