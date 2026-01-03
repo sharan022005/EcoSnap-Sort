@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useTransition, useEffect } from 'react';
+import { useState, useRef, useTransition } from 'react';
 import Image from 'next/image';
 import { Camera, Image as ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
 
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from './ui/badge';
 import { BinIcon, getBinDetails } from './bin-details';
 import type { IdentifyWasteAndRecommendBinOutput } from '@/ai/flows/identify-waste-and-recommend-bin';
-import { useDoc, useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useDoc, useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { collection, doc, increment, serverTimestamp } from 'firebase/firestore';
 
 export default function WasteScanner() {
@@ -24,7 +24,10 @@ export default function WasteScanner() {
   const { toast } = useToast();
   const { user, firestore } = useFirebase();
 
-  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
   const { data: userData } = useDoc(userDocRef);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
