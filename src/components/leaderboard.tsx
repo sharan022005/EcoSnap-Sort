@@ -10,7 +10,7 @@ import {
 import { Trophy } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -23,17 +23,18 @@ interface UserProfile {
 
 export default function Leaderboard() {
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const leaderboardQuery = useMemoFirebase(
     () =>
-      firestore
+      firestore && user
         ? query(
             collection(firestore, 'users'),
             orderBy('points', 'desc'),
             limit(10)
           )
         : null,
-    [firestore]
+    [firestore, user]
   );
 
   const { data: leaderboardData, isLoading } = useCollection<UserProfile>(
@@ -50,8 +51,10 @@ export default function Leaderboard() {
         <CardDescription>See who's leading the charge in recycling!</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isLoading && !leaderboardData ? (
           <p>Loading leaderboard...</p>
+        ) : !user ? (
+          <p>Please log in to see the leaderboard.</p>
         ) : (
           <ul className="space-y-4">
             {leaderboardData?.map((user, index) => {

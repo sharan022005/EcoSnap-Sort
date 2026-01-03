@@ -12,9 +12,9 @@
  * under the specific user's document (e.g., /users/{userId}/wasteIdentifications/{wasteId}).
  *
  * Key Security Decisions:
- * - User Privacy: Listing the top-level '/users' collection is strictly forbidden to prevent
- *   any user from discovering or enumerating other users of the application.
- * - Strict Ownership: All read and write operations are gated by checking if the authenticated
+ * - User Privacy: While individual user documents can be read by any authenticated user for
+ *   leaderboard purposes, listing the entire collection is allowed only for authenticated users.
+ * - Strict Ownership: All write operations are gated by checking if the authenticated
  *   user's ID matches the user ID in the document path.
  * - Authorization Integrity: To ensure data consistency, rules validate that internal ID
  *   fields (e.g., 'User.id', 'WasteIdentification.userId') match the user ID in the
@@ -64,15 +64,15 @@ service cloud.firestore {
     /**
      * @description Rules for user profile documents.
      * @path /users/{userId}
-     * @allow (get) An authenticated user reads their own profile document. auth.uid: "user_abc", path: "/users/user_abc".
+     * @allow (get) An authenticated user can read any user's profile for the leaderboard.
+     * @allow (list) An authenticated user can list users for the leaderboard.
      * @allow (create) A new user creates their own profile document. auth.uid: "user_xyz", path: "/users/user_xyz".
-     * @deny (list) Any user, authenticated or not, tries to list all users. path: "/users".
      * @deny (update) An authenticated user tries to update another user's profile. auth.uid: "user_abc", path: "/users/user_xyz".
-     * @principle Restricts access to a user's own data tree and prevents user enumeration for privacy.
+     * @principle Restricts write access to a user's own data, but allows reads for leaderboard.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // CRITICAL: Prevents scraping and enumeration of all users.
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
