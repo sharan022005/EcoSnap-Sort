@@ -12,7 +12,6 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from './ui/scroll-area';
 import { SheetHeader, SheetTitle } from './ui/sheet';
 
@@ -21,7 +20,6 @@ interface UserProfile {
   displayName: string;
   points: number;
   photoURL?: string;
-  avatarId?: string;
 }
 
 export default function Leaderboard() {
@@ -30,14 +28,14 @@ export default function Leaderboard() {
 
   const leaderboardQuery = useMemoFirebase(
     () =>
-      firestore
+      firestore && user
         ? query(
             collection(firestore, 'users'),
             orderBy('points', 'desc'),
             limit(10)
           )
         : null,
-    [firestore]
+    [firestore, user]
   );
 
   const { data: leaderboardData, isLoading } = useCollection<UserProfile>(
@@ -60,9 +58,6 @@ export default function Leaderboard() {
         ) : (
           <ul className="space-y-4 pr-4">
             {leaderboardData?.map((profile, index) => {
-               const avatar = PlaceHolderImages.find(
-                (img) => img.id === profile.avatarId || 'avatar-' + ((index % 10) + 1)
-              );
               return (
                 <li key={profile.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
                   <Badge
@@ -74,14 +69,8 @@ export default function Leaderboard() {
                   <Avatar>
                     {profile.photoURL ? (
                       <AvatarImage src={profile.photoURL} alt={profile.displayName}/>
-                    ) : avatar ? (
-                       <AvatarImage
-                        src={avatar.imageUrl}
-                        alt={profile.displayName}
-                        data-ai-hint={avatar.imageHint}
-                      />
                     ) : null}
-                    <AvatarFallback>{profile.displayName?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{profile.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-foreground">{profile.displayName || 'Anonymous'}</p>

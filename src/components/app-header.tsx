@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { LogOut, Recycle, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -34,7 +33,7 @@ export default function AppHeader() {
            const newUser = {
             id: user.uid,
             email: user.email ?? '',
-            displayName: user.displayName ?? 'Anonymous',
+            displayName: user.displayName ?? user.email?.split('@')[0] ?? 'Anonymous',
             points: 0,
             createdAt: serverTimestamp(),
           };
@@ -43,8 +42,6 @@ export default function AppHeader() {
       })
     }
   }, [user, firestore]);
-
-  const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -61,14 +58,12 @@ export default function AppHeader() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            {user ? (
+            {user && !user.isAnonymous ? (
               <>
                 <Avatar className="h-9 w-9">
-                  {user.photoURL ? <AvatarImage src={user.photoURL} alt="User Avatar" /> : 
-                    (userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" data-ai-hint={userAvatar.imageHint} />)
-                  }
+                  {user.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" /> }
                   <AvatarFallback>
-                    {user.displayName ? user.displayName.charAt(0) : <User />}
+                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : <User />}
                   </AvatarFallback>
                 </Avatar>
                  <Button onClick={handleLogout} size="sm" variant="outline">

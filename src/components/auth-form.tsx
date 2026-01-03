@@ -21,6 +21,7 @@ import { useAuth } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  updateProfile,
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,25 +34,38 @@ export default function AuthForm({ onLoginSuccess }: AuthFormProps) {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleAuthAction = async (action: 'login' | 'signup') => {
     setLoading(true);
-    try {
-      if (action === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+    if (!auth.currentUser && auth) {
+      try {
+        if (action === 'login') {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else {
+          if (!displayName) {
+            toast({
+              variant: 'destructive',
+              title: 'Sign Up Failed',
+              description: 'Please enter a display name.',
+            });
+            setLoading(false);
+            return;
+          }
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          await updateProfile(userCredential.user, { displayName });
+        }
+        onLoginSuccess();
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Failed',
+          description: error.message,
+        });
+      } finally {
+        setLoading(false);
       }
-      onLoginSuccess();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Failed',
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -110,6 +124,17 @@ export default function AuthForm({ onLoginSuccess }: AuthFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="signup-name">Display Name</Label>
+              <Input
+                id="signup-name"
+                type="text"
+                placeholder="Jane Doe"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                disabled={loading}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="signup-email">Email</Label>
               <Input
