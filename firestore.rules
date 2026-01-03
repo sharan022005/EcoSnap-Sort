@@ -64,15 +64,13 @@ service cloud.firestore {
     /**
      * @description Rules for user profile documents.
      * @path /users/{userId}
-     * @allow (get) An authenticated user can read any user's profile for the leaderboard.
-     * @allow (list) An authenticated user can list users for the leaderboard.
+     * @allow (get, list) An authenticated user can read any user's profile for the leaderboard.
      * @allow (create) A new user creates their own profile document. auth.uid: "user_xyz", path: "/users/user_xyz".
      * @deny (update) An authenticated user tries to update another user's profile. auth.uid: "user_abc", path: "/users/user_xyz".
      * @principle Restricts write access to a user's own data, but allows reads for leaderboard.
      */
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
@@ -88,8 +86,7 @@ service cloud.firestore {
      * @principle Enforces document ownership for all subcollection operations, ensuring data privacy.
      */
     match /users/{userId}/wasteIdentifications/{wasteId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow read: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
