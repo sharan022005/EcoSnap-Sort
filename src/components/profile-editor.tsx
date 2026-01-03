@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Camera, Loader2, User as UserIcon } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 
 interface ProfileEditorProps {
   onFinished: () => void;
@@ -68,7 +68,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       await updateProfile(user, { photoURL });
       
       const userDocRef = doc(firestore, 'users', user.uid);
-      updateDocumentNonBlocking(userDocRef, { photoURL });
+      await updateDoc(userDocRef, { photoURL });
       
       setPhotoPreview(photoURL);
 
