@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,19 +38,28 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(user?.photoURL || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      displayName: user?.displayName || '',
+      displayName: '',
     },
   });
+  
+  useEffect(() => {
+    if (user) {
+      setPhotoPreview(user.photoURL || null);
+      setValue('displayName', user.displayName || '');
+    }
+  }, [user, setValue]);
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
