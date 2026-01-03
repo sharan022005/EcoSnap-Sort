@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useRef, useTransition } from 'react';
+import { useState, useRef, useTransition, useEffect } from 'react';
 import Image from 'next/image';
 import { Camera, Image as ImageIcon, Loader2, Sparkles, X } from 'lucide-react';
 
@@ -10,17 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from './ui/badge';
-import { BinIcon, getBinDetails, type BinColor } from './bin-details';
+import { BinIcon, getBinDetails } from './bin-details';
 import type { IdentifyWasteAndRecommendBinOutput } from '@/ai/flows/identify-waste-and-recommend-bin';
+import { useDoc, useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { collection, doc, increment, serverTimestamp } from 'firebase/firestore';
 
 export default function WasteScanner() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [result, setResult] = useState<IdentifyWasteAndRecommendBinOutput | null>(null);
-  const [points, setPoints] = useState(0);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user, firestore } = useFirebase();
+
+  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const { data: userData } = useDoc(userDocRef);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -35,7 +40,7 @@ export default function WasteScanner() {
   };
 
   const handleAnalyze = () => {
-    if (!imageFile) return;
+    if (!imageFile || !user) return;
 
     const formData = new FormData();
     formData.append('image', imageFile);
@@ -44,7 +49,21 @@ export default function WasteScanner() {
       const response = await analyzeWasteImage(formData);
       if (response.success) {
         setResult(response.data);
-        setPoints((prev) => prev + 10);
+        
+        // Update user points
+        const userRef = doc(firestore, 'users', user.uid);
+        updateDocumentNonBlocking(userRef, { points: increment(10) });
+
+        // Save waste identification event
+        const wasteIdentificationsRef = collection(firestore, `users/${user.uid}/wasteIdentifications`);
+        addDocumentNonBlocking(wasteIdentificationsRef, {
+            userId: user.uid,
+            timestamp: serverTimestamp(),
+            imageUri: imagePreview, // In a real app, you'd upload this to a storage bucket and save the URL
+            predictedBin: response.data.binColor,
+            ecoFact: response.data.ecoFact,
+        });
+
       } else {
         toast({
           variant: 'destructive',
@@ -78,7 +97,7 @@ export default function WasteScanner() {
           <div className="flex flex-col items-center gap-4">
             <div
               className="relative flex h-64 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50 transition-colors hover:border-primary hover:bg-primary/5"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => user ? fileInputRef.current?.click() : toast({ title: 'Please log in to scan items.' })}
             >
               {imagePreview ? (
                 <>
@@ -113,11 +132,12 @@ export default function WasteScanner() {
                 className="hidden"
                 accept="image/*"
                 capture="environment"
+                disabled={!user}
               />
             </div>
 
             {imagePreview ? (
-              <Button onClick={handleAnalyze} disabled={isPending} className="w-full" size="lg">
+              <Button onClick={handleAnalyze} disabled={isPending || !user} className="w-full" size="lg">
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -126,7 +146,7 @@ export default function WasteScanner() {
                 Analyze Waste
               </Button>
             ) : (
-                <Button onClick={() => fileInputRef.current?.click()} className="w-full" size="lg" variant="secondary">
+                <Button onClick={() => user ? fileInputRef.current?.click() : toast({ title: 'Please log in to scan items.' })} className="w-full" size="lg" variant="secondary" disabled={!user}>
                     <ImageIcon className="mr-2 h-4 w-4" />
                     Choose Image
                 </Button>
@@ -135,7 +155,7 @@ export default function WasteScanner() {
         </CardContent>
         <div className="absolute top-4 right-4">
             <Badge variant="secondary" className="text-lg">
-              Points: {points}
+              Points: {userData?.points ?? 0}
             </Badge>
         </div>
       </Card>
@@ -156,7 +176,7 @@ export default function WasteScanner() {
                         <p className="font-semibold">💡 Eco-Fact</p>
                         <p className="text-muted-foreground">{result.ecoFact}</p>
                     </div>
-                    <Button onClick={() => setResult(null)} className="w-full">Got it!</Button>
+                    <Button onClick={() => { setResult(null); handleReset(); }} className="w-full">Got it!</Button>
                  </>
             )}
         </DialogContent>
