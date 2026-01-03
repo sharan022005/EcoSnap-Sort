@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirebase, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, Loader2, User as UserIcon } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
@@ -34,8 +34,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
-  const { user, isUserLoading } = useUser();
-  const { storage, firestore, auth } = useFirebase();
+  const { user, isUserLoading, storage, firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -55,7 +54,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || !storage || !firestore || !auth.currentUser) return;
 
     setPhotoUploading(true);
 
@@ -65,9 +64,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       const snapshot = await uploadBytes(storageRef, file);
       const photoURL = await getDownloadURL(snapshot.ref);
 
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { photoURL });
-      }
+      await updateProfile(auth.currentUser, { photoURL });
       
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, { photoURL });
@@ -90,7 +87,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
   };
 
   const onSubmit = async (data: ProfileFormValues) => {
-    if (!user || !auth.currentUser) return;
+    if (!user || !auth.currentUser || !firestore) return;
 
     setLoading(true);
 
@@ -98,7 +95,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       if (data.displayName !== user.displayName) {
         await updateProfile(auth.currentUser, { displayName: data.displayName });
         const userDocRef = doc(firestore, 'users', user.uid);
-        updateDocumentNonBlocking(userDocRef, { displayName: data.displayName });
+        await updateDoc(userDocRef, { displayName: data.displayName });
       }
 
       toast({
