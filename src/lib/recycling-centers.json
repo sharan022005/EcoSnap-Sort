@@ -1,0 +1,36 @@
+{
+  "centers": [
+    {
+      "id": "rec-1",
+      "name": "GreenWay Recycling",
+      "address": "123 Recycle Rd, Eco City, 12345",
+      "lat": 34.0522,
+      "lng": -118.2437,
+      "accepts": ["paper", "cardboard", "plastic bottles", "glass jars", "aluminum cans"]
+    },
+    {
+      "id": "rec-2",
+      "name": "Eco-Hub Drop-off",
+      "address": "456 Planet Ave, Nature Town, 54321",
+      "lat": 34.058,
+      "lng": -118.251,
+      "accepts": ["batteries", "electronics", "paint", "scrap metal"]
+    },
+    {
+      "id": "rec-3",
+      "name": "Metro Resource Recovery",
+      "address": "789 Sustainability St, Urban Center, 67890",
+      "lat": 34.049,
+      "lng": -118.239,
+      "accepts": ["paper", "cardboard", "plastic bottles", "glass jars", "aluminum cans", "scrap metal"]
+    },
+    {
+      "id": "rec-4",
+      "name": "Community Recycling Point",
+      "address": "101 Commons Dr, Suburbia, 13579",
+      "lat": 34.061,
+      "lng": -118.245,
+      "accepts": ["paper", "cardboard", "plastic bottles", "glass jars"]
+    }
+  ]
+}

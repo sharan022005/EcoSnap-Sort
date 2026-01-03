@@ -15,7 +15,11 @@ import type { IdentifyWasteAndRecommendBinOutput } from '@/ai/flows/identify-was
 import { useDoc, useFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import { collection, doc, increment, serverTimestamp } from 'firebase/firestore';
 
-export default function WasteScanner() {
+interface WasteScannerProps {
+  onAnalysisComplete: (result: IdentifyWasteAndRecommendBinOutput) => void;
+}
+
+export default function WasteScanner({ onAnalysisComplete }: WasteScannerProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [result, setResult] = useState<IdentifyWasteAndRecommendBinOutput | null>(null);
@@ -52,6 +56,7 @@ export default function WasteScanner() {
       const response = await analyzeWasteImage(formData);
       if (response.success) {
         setResult(response.data);
+        onAnalysisComplete(response.data);
         
         // Update user points
         const userRef = doc(firestore, 'users', user.uid);
@@ -179,7 +184,7 @@ export default function WasteScanner() {
                         <p className="font-semibold">💡 Eco-Fact</p>
                         <p className="text-muted-foreground">{result.ecoFact}</p>
                     </div>
-                    <Button onClick={() => { setResult(null); handleReset(); }} className="w-full">Got it!</Button>
+                    <Button onClick={() => { setResult(null); handleReset(); }} className="w-full">Scan another item</Button>
                  </>
             )}
         </DialogContent>
