@@ -34,8 +34,8 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
-  const { user, auth } = useUser();
-  const { storage, firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
+  const { storage, firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -65,7 +65,9 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       const snapshot = await uploadBytes(storageRef, file);
       const photoURL = await getDownloadURL(snapshot.ref);
 
-      await updateProfile(user, { photoURL });
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL });
+      }
       
       const userDocRef = doc(firestore, 'users', user.uid);
       await updateDoc(userDocRef, { photoURL });
@@ -88,13 +90,13 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
   };
 
   const onSubmit = async (data: ProfileFormValues) => {
-    if (!user) return;
+    if (!user || !auth.currentUser) return;
 
     setLoading(true);
 
     try {
       if (data.displayName !== user.displayName) {
-        await updateProfile(user, { displayName: data.displayName });
+        await updateProfile(auth.currentUser, { displayName: data.displayName });
         const userDocRef = doc(firestore, 'users', user.uid);
         updateDocumentNonBlocking(userDocRef, { displayName: data.displayName });
       }
@@ -114,6 +116,19 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       setLoading(false);
     }
   };
+  
+  if (isUserLoading) {
+    return (
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Profile</DialogTitle>
+        </DialogHeader>
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="animate-spin text-primary" />
+        </div>
+      </DialogContent>
+    )
+  }
 
   return (
     <DialogContent>
