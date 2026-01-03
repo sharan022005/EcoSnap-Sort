@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LogOut, Recycle, User } from 'lucide-react';
+import { LogOut, Recycle, User, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import { useAuth, useUser, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
@@ -19,12 +19,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ProfileEditor from './profile-editor';
 
 export default function AppHeader() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -33,16 +35,17 @@ export default function AppHeader() {
   }, [user, isUserLoading, auth]);
 
   useEffect(() => {
-    if (user) {
+    if (user && !user.isAnonymous) { // Only create doc for non-anonymous users
       const userRef = doc(firestore, 'users', user.uid);
       getDoc(userRef).then(docSnap => {
         if (!docSnap.exists()) {
            const newUser = {
             id: user.uid,
             email: user.email ?? '',
-            displayName: user.displayName ?? user.email?.split('@')[0] ?? 'Anonymous',
+            displayName: user.displayName ?? user.email?.split('@')[0] ?? 'New User',
             points: 0,
             createdAt: serverTimestamp(),
+            photoURL: user.photoURL ?? null,
           };
           setDocumentNonBlocking(userRef, newUser, { merge: true });
         }
@@ -87,6 +90,10 @@ export default function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={() => setProfileModalOpen(true)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
@@ -100,17 +107,16 @@ export default function AppHeader() {
         </div>
       </header>
        <Dialog open={isAuthModalOpen} onOpenChange={setAuthModalOpen}>
-        <DialogContent className="p-0">
-          <DialogHeader>
-            <VisuallyHidden>
-              <DialogTitle>Authentication</DialogTitle>
-              <DialogDescription>
-                Log in or sign up to your EcoSnap Sort account.
-              </DialogDescription>
-            </VisuallyHidden>
-          </DialogHeader>
+        <DialogContent className="p-0 max-w-sm">
+          <VisuallyHidden>
+            <DialogTitle>Authentication</DialogTitle>
+            <DialogDescription>Log in or sign up to your EcoSnap Sort account.</DialogDescription>
+          </VisuallyHidden>
           <AuthForm onLoginSuccess={() => setAuthModalOpen(false)} />
         </DialogContent>
+      </Dialog>
+      <Dialog open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
+        <ProfileEditor onFinished={() => setProfileModalOpen(false)} />
       </Dialog>
     </>
   );
