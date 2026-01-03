@@ -8,9 +8,11 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, useUser, initiateAnonymousSignIn, setDocumentNonBlocking } from '@/firebase';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import AuthForm from './auth-form';
 import { signOut } from 'firebase/auth';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+
 
 export default function AppHeader() {
   const auth = useAuth();
@@ -81,7 +83,15 @@ export default function AppHeader() {
         </div>
       </header>
        <Dialog open={isAuthModalOpen} onOpenChange={setAuthModalOpen}>
-        <DialogContent className="p-0 bg-transparent border-none">
+        <DialogContent className="p-0">
+          <DialogHeader>
+            <VisuallyHidden>
+              <DialogTitle>Authentication</DialogTitle>
+              <DialogDescription>
+                Log in or sign up to your EcoSnap Sort account.
+              </DialogDescription>
+            </VisuallyHidden>
+          </DialogHeader>
           <AuthForm onLoginSuccess={() => setAuthModalOpen(false)} />
         </DialogContent>
       </Dialog>
