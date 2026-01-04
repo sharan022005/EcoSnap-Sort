@@ -43,7 +43,7 @@ export default function CampusMap() {
         <div className="text-center p-4">
           <p className="font-semibold text-foreground">Google Maps API Key is Missing</p>
           <p className="text-sm text-muted-foreground mt-2">
-            Please add your key to a <code className="bg-primary/10 text-primary p-1 rounded-sm">.env.local</code> file as <code className="bg-primary/10 text-primary p-1 rounded-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>.
+            Please add your key to a <code className="bg-primary/10 text-primary p-1 rounded-sm">.env.local</code> file as <code className="bg-primary/10 text-primary p-1 rounded-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> and restart the development server.
           </p>
         </div>
       </div>
