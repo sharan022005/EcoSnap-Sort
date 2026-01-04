@@ -38,34 +38,33 @@ export default function AuthForm({ onLoginSuccess }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
 
   const handleAuthAction = async (action: 'login' | 'signup') => {
+    if (!auth) return;
     setLoading(true);
-    if (!auth.currentUser && auth) {
-      try {
-        if (action === 'login') {
-          await signInWithEmailAndPassword(auth, email, password);
-        } else {
-          if (!displayName) {
-            toast({
-              variant: 'destructive',
-              title: 'Sign Up Failed',
-              description: 'Please enter a display name.',
-            });
-            setLoading(false);
-            return;
-          }
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          await updateProfile(userCredential.user, { displayName });
+    try {
+      if (action === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        if (!displayName) {
+          toast({
+            variant: 'destructive',
+            title: 'Sign Up Failed',
+            description: 'Please enter a display name.',
+          });
+          setLoading(false);
+          return;
         }
-        onLoginSuccess();
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Failed',
-          description: error.message,
-        });
-      } finally {
-        setLoading(false);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName });
       }
+      onLoginSuccess();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Failed',
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,8 +95,7 @@ export default function AuthForm({ onLoginSuccess }: AuthFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
+              <Label htmlFor="login-password">Password</Label>              <Input
                 id="login-password"
                 type="password"
                 value={password}
