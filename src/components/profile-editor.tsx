@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useStorage } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, Loader2, User as UserIcon } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
@@ -34,7 +34,8 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
-  const { user, isUserLoading, storage, firestore, auth } = useFirebase();
+  const { user, isUserLoading, firestore, auth } = useFirebase();
+  const storage = useStorage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -170,7 +171,7 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
               size="icon"
               className="absolute bottom-0 right-0 rounded-full"
               onClick={() => fileInputRef.current?.click()}
-              disabled={photoUploading}
+              disabled={photoUploading || !storage}
             >
               {photoUploading ? (
                 <Loader2 className="animate-spin" />
