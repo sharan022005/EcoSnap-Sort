@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { getBinDetails, type BinColor } from './bin-details';
 import type { IdentifyWasteAndRecommendBinOutput } from '@/ai/flows/identify-waste-and-recommend-bin';
 import { ScrollArea } from './ui/scroll-area';
-import Image from 'next/image';
 import recyclingCenters from '@/lib/recycling-centers.json';
+import MapDisplay from './map-display';
 
 interface WasteWiseProps {
   result: IdentifyWasteAndRecommendBinOutput | null;
@@ -89,10 +89,8 @@ export default function WasteWise({ result }: WasteWiseProps) {
                   <Map className="h-5 w-5 text-primary" />
                   Nearby Recycling Centers
                 </h3>
-                 <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4 border">
-                    {/* Placeholder for an actual map component */}
-                    <Image src="https://picsum.photos/seed/map/800/400" alt="Map of recycling centers" layout="fill" objectFit="cover" data-ai-hint="city map" />
-                    <div className="absolute inset-0 bg-black/20"></div>
+                 <div className="relative h-64 w-full rounded-lg overflow-hidden mb-4 border">
+                    <MapDisplay locations={recyclingCenters.centers} />
                  </div>
                  <ul className="space-y-2">
                     {recyclingCenters.centers.slice(0, 3).map(center => (
