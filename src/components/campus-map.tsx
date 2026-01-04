@@ -37,6 +37,8 @@ export default function CampusMap() {
   const position = { lat: 12.9716, lng: 77.5946 };
   const [openMarker, setOpenMarker] = useState<string | null>(null);
 
+  // If the API key is not available, do not attempt to render the map.
+  // Instead, show a clear error message. This prevents the InvalidKeyMapError.
   if (!apiKey) {
     return (
       <div className="flex h-full items-center justify-center bg-muted rounded-lg">
