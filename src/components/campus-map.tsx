@@ -39,11 +39,13 @@ export default function CampusMap() {
 
   if (!apiKey) {
     return (
-      <div className="flex h-full items-center justify-center bg-muted">
-        <p className="text-center text-muted-foreground">
-          Google Maps API Key is missing. <br />
-          Please add it to your environment variables.
-        </p>
+      <div className="flex h-full items-center justify-center bg-muted rounded-lg">
+        <div className="text-center p-4">
+          <p className="font-semibold text-foreground">Google Maps API Key is Missing</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Please add your key to a <code className="bg-primary/10 text-primary p-1 rounded-sm">.env.local</code> file as <code className="bg-primary/10 text-primary p-1 rounded-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>.
+          </p>
+        </div>
       </div>
     );
   }
@@ -74,7 +76,7 @@ export default function CampusMap() {
                   position={location.position}
                   onCloseClick={() => setOpenMarker(null)}
                 >
-                  <Card className="border-none shadow-none">
+                  <Card className="border-none shadow-none p-2">
                     <p className="font-bold">{location.label}</p>
                     <p className="text-sm text-muted-foreground">{location.details}</p>
                   </Card>
