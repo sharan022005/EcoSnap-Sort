@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,11 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useFirebase, useStorage } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Loader2, User as UserIcon } from 'lucide-react';
+import { Loader2, User as UserIcon } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 
 interface ProfileEditorProps {
@@ -35,12 +34,8 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
   const { user, isUserLoading, firestore, auth } = useFirebase();
-  const storage = useStorage();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -56,45 +51,9 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
   
   useEffect(() => {
     if (user) {
-      setPhotoPreview(user.photoURL || null);
       setValue('displayName', user.displayName || '');
     }
   }, [user, setValue]);
-
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user || !storage || !firestore || !auth.currentUser) return;
-
-    setPhotoUploading(true);
-
-    const storageRef = ref(storage, `avatars/${user.uid}/${file.name}`);
-    
-    try {
-      const snapshot = await uploadBytes(storageRef, file);
-      const photoURL = await getDownloadURL(snapshot.ref);
-
-      await updateProfile(auth.currentUser, { photoURL });
-      
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userDocRef, { photoURL });
-      
-      setPhotoPreview(photoURL);
-
-      toast({
-        title: 'Success',
-        description: 'Profile picture updated!',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Upload Failed',
-        description: error.message,
-      });
-    } finally {
-      setPhotoUploading(false);
-    }
-  };
 
   const onSubmit = async (data: ProfileFormValues) => {
     if (!user || !auth.currentUser || !firestore) return;
@@ -147,39 +106,16 @@ export default function ProfileEditor({ onFinished }: ProfileEditorProps) {
       </DialogHeader>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={photoPreview || undefined} alt="User avatar" />
-              <AvatarFallback className="text-3xl">
-                {user?.displayName ? (
-                  user.displayName.charAt(0).toUpperCase()
-                ) : (
-                  <UserIcon />
-                )}
-              </AvatarFallback>
-            </Avatar>
-             <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileChange}
-              accept="image/png, image/jpeg, image/gif"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="absolute bottom-0 right-0 rounded-full"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={photoUploading || !storage}
-            >
-              {photoUploading ? (
-                <Loader2 className="animate-spin" />
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={user?.photoURL || undefined} alt="User avatar" />
+            <AvatarFallback className="text-3xl">
+              {user?.displayName ? (
+                user.displayName.charAt(0).toUpperCase()
               ) : (
-                <Camera />
+                <UserIcon />
               )}
-            </Button>
-          </div>
+            </AvatarFallback>
+          </Avatar>
         </div>
 
         <div className="space-y-2">
