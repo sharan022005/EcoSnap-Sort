@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { getBinDetails, type BinColor } from './bin-details';
 import type { IdentifyWasteAndRecommendBinOutput } from '@/ai/flows/identify-waste-and-recommend-bin';
 import { ScrollArea } from './ui/scroll-area';
-import recyclingCenters from '@/lib/recycling-centers.json';
-import MapDisplay from './map-display';
+import CampusMap from './campus-map'; // Import the new map component
 
 interface WasteWiseProps {
   result: IdentifyWasteAndRecommendBinOutput | null;
@@ -34,8 +33,6 @@ export default function WasteWise({ result }: WasteWiseProps) {
   const details = result ? getBinDetails(result.binColor) : getBinDetails('Blue'); // Default to Blue
   const info = result ? binInfo[result.binColor] : binInfo.Blue;
   
-  const showMap = result && result.binColor === 'Blue';
-
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
@@ -44,7 +41,7 @@ export default function WasteWise({ result }: WasteWiseProps) {
           Waste Wise Guide
         </CardTitle>
         <CardDescription>
-          {result ? `Learn more about the ${details.label} bin.` : "Learn about proper waste disposal."}
+          {result ? `Learn more about the ${details.label} bin.` : "Learn about proper waste disposal and find drop-off points."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
@@ -83,32 +80,19 @@ export default function WasteWise({ result }: WasteWiseProps) {
               </div>
             </div>
 
-            {showMap && (
-              <div>
-                <h3 className="font-headline text-lg flex items-center gap-2 mb-2">
-                  <Map className="h-5 w-5 text-primary" />
-                  Nearby Recycling Centers
-                </h3>
-                 <div className="relative h-64 w-full rounded-lg overflow-hidden mb-4 border">
-                    <MapDisplay locations={recyclingCenters.centers} />
-                 </div>
-                 <ul className="space-y-2">
-                    {recyclingCenters.centers.slice(0, 3).map(center => (
-                        <li key={center.id} className="flex items-start gap-3 text-sm p-2 rounded-lg hover:bg-muted/50">
-                            <MapPin className="h-4 w-4 mt-0.5 text-primary shrink-0"/>
-                            <div>
-                                <p className="font-semibold">{center.name}</p>
-                                <p className="text-muted-foreground">{center.address}</p>
-                            </div>
-                        </li>
-                    ))}
-                 </ul>
-              </div>
-            )}
+            <div>
+              <h3 className="font-headline text-lg flex items-center gap-2 mb-2">
+                <Map className="h-5 w-5 text-primary" />
+                Campus Recycling Map
+              </h3>
+               <div className="relative h-80 w-full rounded-lg overflow-hidden border">
+                  <CampusMap />
+               </div>
+            </div>
 
             {!result && (
-              <div className="text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
-                <p>Scan an item to get specific guidance and find local recycling centers.</p>
+              <div className="mt-8 text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                <p>Scan an item to get specific guidance for that item.</p>
               </div>
             )}
           </div>
